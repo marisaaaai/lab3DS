@@ -1,0 +1,123 @@
+---
+title: "LAB3"
+author: "Marisa Montoya, Majo Morales, Luis Garcia y Juanfer De Leon"
+date: "8/16/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("C:/Users/Marisa Montoya}/lab3DS")
+library(h2o)
+library(keras)
+library(tidyr)
+library(ggplot2)
+```
+
+#Laboratorio #3 reconocimiento de caracteres en manuscritos
+##Analisis Exploratorio
+
+Los archivos de datos train.csv y test.csv contienen imágenes en escala de grises de dígitos dibujados a mano, del cero al nueve.Cada imagen tiene 28 píxeles de altura y 28 píxeles de ancho, para un total de 784 píxeles en total. Cada píxel tiene un único valor de píxel asociado, que indica la luminosidad u oscuridad de ese píxel, con números más altos que significan más oscuros. Este valor de píxel es un número entero entre 0 y 255, inclusive.El  conjunto  de  datos  de  entrenamiento,  (train.csv),  tiene  785  columnas.  La  primera  columna, llamada  "etiqueta",  es  el  dígito  dibujado  por  el  usuario.  El  resto  de  las  columnas  contienen  los valores decadapíxel dela imagen asociada.Cada columna de píxeles en el conjunto de entrenamiento tiene un nombre como pixelx, donde x es un número entero entre 0 y 783, inclusive. Para ubicar este píxel en la imagen, supongamos que hemos descompuesto x como x = i * 28 + j, donde i y j son números enteros entre 0 y 27, inclusive. Luego, pixelx se ubica en la fila iy la columna j de una matriz de 28 x 28, (indexando por cero)
+
+```{r Analisis explor 1, echo=FALSE}
+datos <- read.csv("./train.csv")
+str(datos, list.len=ncol(datos))
+summary(datos)
+dim(datos)
+datos$label[1:20]
+
+```
+
+De lo que podemos observar es que se cuenta con 785 columnas, siendo la primera en donde esta la etiqueta de que numero es la que se esta tratando mientras que las demas corresponden a los 784 pixeles de la imagen en total. Mientras que las columnas de pixeles su minimo es 0 y maximo es de 255, la columna de label va de 0 a 9. 
+
+```{r echo=FALSE}
+porcentaje<-0.8
+set.seed(123)
+
+corte <- sample(nrow(datos),nrow(datos)*porcentaje)
+train<-datos[corte,]
+
+test<-datos[-corte,]
+```
+
+Dividimos el train y test del conjunto de datos y mostramos el head de train. 
+
+
+```{r echo=FALSE}
+head(train[1:10])
+
+```
+
+Al imprimir una imagen nos damos cuenta que necesita que sea rotada una vez a la derecha para que pueda ser observada de mejor manera. 
+
+```{r echo=FALSE}
+m = matrix(unlist(train[10,-1]),nrow = 28,byrow = T)
+image(m,col=grey.colors(255))
+```
+
+Luego imprimimos seis imagenes con sus etiquetas para poder observarlas bien.
+
+```{r echo=FALSE}
+rotate <- function(x) t(apply(x, 2, rev)) #rota la imagen
+
+par(mfrow=c(2,3))
+lapply(1:6, 
+    function(x) image(
+                    rotate(matrix(unlist(train[x,-1]),nrow = 28,byrow = T)),
+                    col=grey.colors(255),
+                    xlab=train[x,1]
+                )
+)
+par(mfrow=c(1,1)) # set plot options back to default
+
+```
+
+
+##h2o para la creacion de NN
+   H2o es un paquete basado en una red neuronal artificial que es entrenada por un proceso estocastico usando back propagation. La red neuronal puede ser creada con varias capas escondidas. Para más conocimiento de la documentación consultar el siguiente link: https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/deep-learning.html 
+  
+  Se creo el modelo de h2o con los siguientes parametros:
+  1. primero se creo el localh2o para tener una mayor eficiencia de tiempo.
+  2. Se volvio la primera columna de train en factor para el uso del modelo
+  3. se creo el train set con una funcion de h2o para que pueda ser aceptado por el modelo.
+  4. Se instancio el modelo con parametros de 
+    a. x las columnas usadas para la prediccion (2 a 785 porque 1 es la etiqueta), seran las variables predictoras donde esta la informacion de pixels
+    b. y es en donde se encuentra la variable dependiente, en este caso 1.
+    c. training_frame es nuestro dataset usado para la creacion del modelo.
+    d. activation el cual espicifica la funcion de activacion que usara el modelo (si no se especifica es rectifier) en este caso usamos Rectifier with Dropout RELu, esto porque es una manera eficiente de usar el poder de la computadora.
+    e. input_dropout_ratio lo que nos permite mejorar la generalizacion de la NN, 0.2 ya que es el sugerido por la documentacion
+    f. hidden_dropout_ratio ya que especifica el radio de droput en las capas escondidad de la NN, aplicando el valor default de 0.5
+    g. balance classes, se le da el valor de TRUE y se especifica cuantas capas escondidas se desea y de cuantos nodos seran.
+    h. momentum_stable se coloco el valor sugerido por la documentacion
+    i. nesterov_accelerated_gradient para que la computadora cree el modelo de manera rapida.
+    j. epochs, se colocaron 15 ya que mide las veces que se entrena el modelo para obtener el mejor valor posible.
+```{r echo=FALSE}
+localH2O = h2o.init(max_mem_size = '6g', # use 6GB of RAM
+                    nthreads = -1) # use all CPUs 
+```
+
+```{r echo=FALSE}
+## MNIST data as H2O
+train[,1] = as.factor(train[,1]) # convert digit labels to factor for classification
+train_h2o = as.h2o(train)
+
+modelNN =
+  h2o.deeplearning(x = 2:785,  # column numbers for predictors
+                   y = 1,   # column number for label
+                   training_frame = train_h2o, # data in H2O format
+                   activation = "RectifierWithDropout", # algorithm
+                   input_dropout_ratio = 0.2, # % of inputs dropout
+                   hidden_dropout_ratios = c(0.5,0.5), # % for nodes dropout
+                   balance_classes = TRUE, 
+                   hidden = c(100,100), # two layers of 100 nodes
+                   momentum_stable = 0.99,
+                   nesterov_accelerated_gradient = T, # use it for speed
+                   epochs = 15) # no. of epochs
+
+h2o.confusionMatrix(modelNN)
+h2o.shutdown(prompt = F)
+
+
+```
+
+El modelo nos demuestra que luego de 15 epochs, el error es de 0.0409, lo cual se traduce a 1 - 0.0409 = 0.9182 de accuracy. En porcentaje es un accuracy del 91%, lo cual es buen porcentaje para una red neuronal simple. 
