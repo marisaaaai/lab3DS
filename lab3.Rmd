@@ -177,13 +177,6 @@ h2o.confusionMatrix(modelNN)
 
 El accuracy subio un 1% por lo que nos quedaremos con 15 epochs realizados, un error del 3.92% y un accuracy del 96.08% para este modelo. 
 
-
-```{r shutdown java env, echo=FALSE}
-h2o.shutdown(prompt = F)
-
-```
-
-
 ##Prediccion con manuscritos de los participantes del grupo
 
 Para esto primero se debera de cargar las imagenes a R, se uso  el paquete EBImage, instalado con BiocManager. Aqui se puede encontrar la documentacion
@@ -234,24 +227,10 @@ colnames(numbers)<-nums
 ```
 
 Se procede a activar el environment para h2o y a hacer la prediccion
-```{r}
-localH2O = h2o.init(max_mem_size = '6g', # use 6GB of RAM
-                    nthreads = -1) # use all CPUs 
+```{r echo=FALSE}
+ 
 test_h2o = as.h2o(numbers)
-train_h2o = as.h2o(train)
 
-modelNN =
-  h2o.deeplearning(x = 2:785,  # column numbers for predictors
-                   y = 1,   # column number for label
-                   training_frame = train_h2o, # data in H2O format
-                   activation = "RectifierWithDropout", # algorithm
-                   input_dropout_ratio = 0.2, # % of inputs dropout
-                   hidden_dropout_ratios = c(0.5,0.5), # % for nodes dropout
-                   balance_classes = TRUE, 
-                   hidden = c(100,100), # two layers of 100 nodes
-                   momentum_stable = 0.99,
-                   nesterov_accelerated_gradient = T, # use it for speed
-                   epochs = 15) # no. of epochs
 ## classify test set
 h2o_y_test <- h2o.predict(modelNN, test_h2o)
 
@@ -260,5 +239,8 @@ df_y_test = as.data.frame(h2o_y_test)
 df_y_test = data.frame(ImageId = seq(1,length(df_y_test$predict)), Label = df_y_test$predict)
 df_y_test
 ```
+```{r shutdown java envvvv, echo=FALSE}
+h2o.shutdown(prompt = F)
 
+```
 
