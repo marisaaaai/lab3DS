@@ -14,7 +14,8 @@ library(tidyr)
 library(ggplot2)
 ```
 
-#Laboratorio #3 reconocimiento de caracteres en manuscritos
+#Laboratorio 3 reconocimiento de caracteres en manuscritos
+
 ##Analisis Exploratorio
 
 Los archivos de datos train.csv y test.csv contienen imágenes en escala de grises de dígitos dibujados a mano, del cero al nueve.Cada imagen tiene 28 píxeles de altura y 28 píxeles de ancho, para un total de 784 píxeles en total. Cada píxel tiene un único valor de píxel asociado, que indica la luminosidad u oscuridad de ese píxel, con números más altos que significan más oscuros. Este valor de píxel es un número entero entre 0 y 255, inclusive.El  conjunto  de  datos  de  entrenamiento,  (train.csv),  tiene  785  columnas.  La  primera  columna, llamada  "etiqueta",  es  el  dígito  dibujado  por  el  usuario.  El  resto  de  las  columnas  contienen  los valores decadapíxel dela imagen asociada.Cada columna de píxeles en el conjunto de entrenamiento tiene un nombre como pixelx, donde x es un número entero entre 0 y 783, inclusive. Para ubicar este píxel en la imagen, supongamos que hemos descompuesto x como x = i * 28 + j, donde i y j son números enteros entre 0 y 27, inclusive. Luego, pixelx se ubica en la fila iy la columna j de una matriz de 28 x 28, (indexando por cero)
@@ -36,6 +37,8 @@ set.seed(123)
 
 corte <- sample(nrow(datos),nrow(datos)*porcentaje)
 train<-datos[corte,]
+train <- cbind(train[,1],train[,-1]/255.0)
+
 
 test<-datos[-corte,]
 ```
@@ -90,7 +93,7 @@ par(mfrow=c(1,1)) # set plot options back to default
     g. balance classes, se le da el valor de TRUE y se especifica cuantas capas escondidas se desea y de cuantos nodos seran.
     h. momentum_stable se coloco el valor sugerido por la documentacion
     i. nesterov_accelerated_gradient para que la computadora cree el modelo de manera rapida.
-    j. epochs, se colocaron 15 ya que mide las veces que se entrena el modelo para obtener el mejor valor posible.
+    j. epochs, se coloco 1 ya que mide las veces que se entrena el modelo para obtener el mejor valor posible.
 ```{r echo=FALSE}
 localH2O = h2o.init(max_mem_size = '6g', # use 6GB of RAM
                     nthreads = -1) # use all CPUs 
@@ -112,12 +115,150 @@ modelNN =
                    hidden = c(100,100), # two layers of 100 nodes
                    momentum_stable = 0.99,
                    nesterov_accelerated_gradient = T, # use it for speed
-                   epochs = 15) # no. of epochs
+                   epochs = 1) # no. of epochs
 
 h2o.confusionMatrix(modelNN)
-h2o.shutdown(prompt = F)
 
 
 ```
 
-El modelo nos demuestra que luego de 15 epochs, el error es de 0.0409, lo cual se traduce a 1 - 0.0409 = 0.9182 de accuracy. En porcentaje es un accuracy del 91%, lo cual es buen porcentaje para una red neuronal simple. 
+El modelo nos demuestra que luego de 1 epoch, el error es de 0.0888, lo cual se traduce a 1 - 0.0888 = 0.9112 de accuracy. En porcentaje es un accuracy del 91%, lo cual es buen porcentaje para una red neuronal simple. Sin embargo, le vamos a subir 4 epochs para observar si sube el accuracy.
+
+```{r echo=FALSE}
+modelNN =
+  h2o.deeplearning(x = 2:785,  # column numbers for predictors
+                   y = 1,   # column number for label
+                   training_frame = train_h2o, # data in H2O format
+                   activation = "RectifierWithDropout", # algorithm
+                   input_dropout_ratio = 0.2, # % of inputs dropout
+                   hidden_dropout_ratios = c(0.5,0.5), # % for nodes dropout
+                   balance_classes = TRUE, 
+                   hidden = c(100,100), # two layers of 100 nodes
+                   momentum_stable = 0.99,
+                   nesterov_accelerated_gradient = T, # use it for speed
+                   epochs = 5) # no. of epochs
+
+h2o.confusionMatrix(modelNN)
+```
+Con 5 epoch vemos que bajo el error a 0.0591, lo que significa que subio el accuracy a 94% de valores correctos. Veremos si subimos a 10 epochs tmabien sube el accuracy
+```{r echo=FALSE}
+modelNN =
+  h2o.deeplearning(x = 2:785,  # column numbers for predictors
+                   y = 1,   # column number for label
+                   training_frame = train_h2o, # data in H2O format
+                   activation = "RectifierWithDropout", # algorithm
+                   input_dropout_ratio = 0.2, # % of inputs dropout
+                   hidden_dropout_ratios = c(0.5,0.5), # % for nodes dropout
+                   balance_classes = TRUE, 
+                   hidden = c(100,100), # two layers of 100 nodes
+                   momentum_stable = 0.99,
+                   nesterov_accelerated_gradient = T, # use it for speed
+                   epochs = 10) # no. of epochs
+
+h2o.confusionMatrix(modelNN)
+```
+El error bajo nuevamente y el accuracy subio a ser de 95%, probaremos con 15 epochs.
+```{r}
+modelNN =
+  h2o.deeplearning(x = 2:785,  # column numbers for predictors
+                   y = 1,   # column number for label
+                   training_frame = train_h2o, # data in H2O format
+                   activation = "RectifierWithDropout", # algorithm
+                   input_dropout_ratio = 0.2, # % of inputs dropout
+                   hidden_dropout_ratios = c(0.5,0.5), # % for nodes dropout
+                   balance_classes = TRUE, 
+                   hidden = c(100,100), # two layers of 100 nodes
+                   momentum_stable = 0.99,
+                   nesterov_accelerated_gradient = T, # use it for speed
+                   epochs = 15) # no. of epochs
+
+h2o.confusionMatrix(modelNN)
+```
+
+El accuracy subio un 1% por lo que nos quedaremos con 15 epochs realizados, un error del 3.92% y un accuracy del 96.08% para este modelo. 
+
+
+```{r shutdown java env, echo=FALSE}
+h2o.shutdown(prompt = F)
+
+```
+
+
+##Prediccion con manuscritos de los participantes del grupo
+
+Para esto primero se debera de cargar las imagenes a R, se uso  el paquete EBImage, instalado con BiocManager. Aqui se puede encontrar la documentacion
+http://www.bioconductor.org/packages/release/bioc/vignettes/EBImage/inst/doc/EBImage-introduction.html#3_Image_data_representation , se muestra la imagen cargada, se cambia a una escala de grises, se convierte en un array y luego se convierte en un vector de 784 datos que corresponde a los pixeles.
+
+Se hace un dataframe completo con todos los manuscritos a usar y se aplica el modelo de prediccion. X es el numero 1, y es el numero 3 y z es el numero 5, los cuales fueron dibujados por Marisa. 
+```{r echo=FALSE}
+library("EBImage")
+x <- readImage("./unoMarisa.png")
+display(x, method = "raster")
+str(x)
+x<-channel(x,"gray")
+x
+x <- as.array(x)
+x <-as.vector(x)
+
+y <- readImage("./tresMarisa.png")
+display(y, method = "raster")
+y<-channel(y,"gray")
+y
+y <- as.array(y)
+y <-as.vector(y)
+
+z <- readImage("./cincoMarisa.png")
+display(z, method = "raster")
+z<-channel(z,"gray")
+z
+z <- as.array(z)
+z <-as.vector(z)
+
+numbers<- data.frame(x,y,z)
+numbers <- t(numbers)
+numbers <- as.data.frame(numbers)
+
+par(mfrow=c(2,3))
+lapply(1:3, 
+    function(x) image(
+                    rotate(matrix(unlist(numbers[x,-1]),nrow = 28,byrow = T)),
+                    col=grey.colors(255),
+                    xlab=numbers[x,1]
+                )
+)
+par(mfrow=c(1,1)) # set plot options back to default
+
+num<-0:783
+nums=sprintf("pixel%d",num)
+colnames(numbers)<-nums
+```
+
+Se procede a activar el environment para h2o y a hacer la prediccion
+```{r}
+localH2O = h2o.init(max_mem_size = '6g', # use 6GB of RAM
+                    nthreads = -1) # use all CPUs 
+test_h2o = as.h2o(numbers)
+train_h2o = as.h2o(train)
+
+modelNN =
+  h2o.deeplearning(x = 2:785,  # column numbers for predictors
+                   y = 1,   # column number for label
+                   training_frame = train_h2o, # data in H2O format
+                   activation = "RectifierWithDropout", # algorithm
+                   input_dropout_ratio = 0.2, # % of inputs dropout
+                   hidden_dropout_ratios = c(0.5,0.5), # % for nodes dropout
+                   balance_classes = TRUE, 
+                   hidden = c(100,100), # two layers of 100 nodes
+                   momentum_stable = 0.99,
+                   nesterov_accelerated_gradient = T, # use it for speed
+                   epochs = 15) # no. of epochs
+## classify test set
+h2o_y_test <- h2o.predict(modelNN, test_h2o)
+
+## convert H2O format into data frame and  save as csv
+df_y_test = as.data.frame(h2o_y_test)
+df_y_test = data.frame(ImageId = seq(1,length(df_y_test$predict)), Label = df_y_test$predict)
+df_y_test
+```
+
+
