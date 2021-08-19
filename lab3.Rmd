@@ -186,7 +186,7 @@ El accuracy subio un 1% por lo que nos quedaremos con 15 epochs realizados, un e
 
 Se carga la data:
 ```{r Data, echo = FALSE}
-setwd("C:/Users/Marisa Montoya}/lab3DS")
+setwd("C:/Users/Maria Jose/OneDrive/Data Science/lab3")
 datos <- read.csv("train.csv")
 
 View(datos) # Data has no column names
@@ -221,7 +221,7 @@ summary(datos[ , 2:100]) # but some only go up to ~100, data needs to be scaled
 
 ```
 
-
+Se generan subsets del conjunto de datos para que sean manejables y poder tener el dataset train y test. 
 ```{r Preparacion data, echo =FALSE}
 datos$label <- factor(datos$label)
 summary(datos$label)
@@ -239,6 +239,7 @@ test<-datos[-corte,]
 test[ , 2:ncol(test)] <- test[ , 2:ncol(test)]/255
 
 ```
+
 
 ```{r Distribucion digitos, echo = FALSE}
 plot1 <- ggplot(datos, aes(x = label, y = (..count..)/sum(..count..))) + geom_bar() + theme_light() +
@@ -261,6 +262,7 @@ plot3 <- ggplot(test, aes(x = label, y = (..count..)/sum(..count..))) + geom_bar
 
 grid.arrange(plot1, plot2, plot3, nrow = 3)
 ```
+Se observa una frecuencia constante en la distribucion de los digitos en los datasets. 
 
 ```{r Linear Kernel, echo = FALSE}
 model1_linear <- ksvm(label ~ ., data = train, scaled = FALSE, kernel = "vanilladot", C = 1)
@@ -288,7 +290,8 @@ print(fit.linear)
 plot(fit.linear)
 
 ```
-
+Support Vector Machines es un algoritmo de deep learning que es efectivo en espacios de altas dimensiones. Los subsets generados durante el proceso son los vectores de soporte que hacen que el uso de memoria sea mas efectivo. La eficacia del algoritmo segun la matriz de confusion fue de un 90.92% 
+En el codigo se utlizaron bloques de: https://github.com/Srungeer-Simha/MNIST-digit-recognition-using-SVM/blob/master/MNIST%20digit%20recognition%20-%20SVM.R 
 
 ##Prediccion con manuscritos de los participantes del grupo
 
