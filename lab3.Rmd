@@ -186,7 +186,6 @@ El accuracy subio un 1% por lo que nos quedaremos con 15 epochs realizados, un e
 
 Se carga la data:
 ```{r Data, echo = FALSE}
-setwd("C:/Users/Maria Jose/OneDrive/Data Science/lab3")
 datos <- read.csv("train.csv")
 
 View(datos) # Data has no column names
@@ -293,15 +292,46 @@ plot(fit.linear)
 Support Vector Machines es un algoritmo de deep learning que es efectivo en espacios de altas dimensiones. Los subsets generados durante el proceso son los vectores de soporte que hacen que el uso de memoria sea mas efectivo. La eficacia del algoritmo segun la matriz de confusion fue de un 90.92% 
 En el codigo se utlizaron bloques de: https://github.com/Srungeer-Simha/MNIST-digit-recognition-using-SVM/blob/master/MNIST%20digit%20recognition%20-%20SVM.R 
 
+Entre los tres algoritmos, para la prediccion de manuscritos, se usara la red neuronal simple. Este con la CNN tuvieron un accuracy similar, cabe pensar que esto es por la simplicidad de imagenes entonces los filtros de la CNN no pudieron ayudar mucho para hacer más simple la imagén por lo que el performance es igual al de la red neuronal simple.
+
 ##Prediccion con manuscritos de los participantes del grupo
 
 Para esto primero se debera de cargar las imagenes a R, se uso  el paquete EBImage, instalado con BiocManager. Aqui se puede encontrar la documentacion
 http://www.bioconductor.org/packages/release/bioc/vignettes/EBImage/inst/doc/EBImage-introduction.html#3_Image_data_representation , se muestra la imagen cargada, se cambia a una escala de grises, se convierte en un array y luego se convierte en un vector de 784 datos que corresponde a los pixeles.
 
-Se hace un dataframe completo con todos los manuscritos a usar y se aplica el modelo de prediccion. X es el numero 1, y es el numero 3 y z es el numero 5, los cuales fueron dibujados por Marisa. 
+Se hace un dataframe completo con todos los manuscritos a usar y se aplica el modelo de prediccion, asimismo se mostraran cada imagen hecha por los integrantes del grupo. 
+
 ```{r echo=FALSE}
 library("EBImage")
+a <- readImage("./no4luispedro.png")
+a = resize(a, w=28, h=28)
+display(a, method = "raster")
+str(a)
+a<-channel(a,"gray")
+a
+a <- as.array(a)
+a <-as.vector(a)
+
+b <- readImage("./no7luispedro.png")
+b = resize(b, w=28, h=28)
+display(b, method = "raster")
+str(b)
+b<-channel(b,"gray")
+b
+b <- as.array(b)
+b <-as.vector(b)
+
+c <- readImage("./no9luispedro.png")
+c = resize(c, w=28, h=28)
+display(c, method = "raster")
+str(c)
+c<-channel(c,"gray")
+c
+c <- as.array(c)
+c <-as.vector(c)
+
 x <- readImage("./unoMarisa.png")
+x = resize(x, w=28, h=28)
 display(x, method = "raster")
 str(x)
 x<-channel(x,"gray")
@@ -310,6 +340,7 @@ x <- as.array(x)
 x <-as.vector(x)
 
 y <- readImage("./tresMarisa.png")
+y = resize(y, w=28, h=28)
 display(y, method = "raster")
 y<-channel(y,"gray")
 y
@@ -317,13 +348,14 @@ y <- as.array(y)
 y <-as.vector(y)
 
 z <- readImage("./cincoMarisa.png")
+z = resize(z, w=28, h=28)
 display(z, method = "raster")
 z<-channel(z,"gray")
 z
 z <- as.array(z)
 z <-as.vector(z)
 
-numbers<- data.frame(x,y,z)
+numbers<- data.frame(a,b, c, x,y,z)
 numbers <- t(numbers)
 numbers <- as.data.frame(numbers)
 
@@ -342,7 +374,8 @@ nums=sprintf("pixel%d",num)
 colnames(numbers)<-nums
 ```
 
-Se procede a activar el environment para h2o y a hacer la prediccion
+Se procede a activar el environment para h2o y a hacer la prediccion. En la prediccion se tendra como resultado un df con image id que se denomida por 1,2..6 y el valor predicho por el modelo en este test. 
+
 ```{r echo=FALSE}
  
 test = as.h2o(numbers)
@@ -362,6 +395,10 @@ h2o.shutdown(prompt = F)
 
 ```
 
+Se puede ver que en el dataframe de resultado de prediccion image ids. estos corresponden a las imagenes cargadas. 
+La image id 1 es el numero 4, image id 2 es 7, image id 3 es 9, image id 4 es 1, image id 5 es 3 e image id 6 es 5.Podemos ver que se equivoco en la prediccion de la id 2, 3 y 4, teniendo un accuracy del 50%. 
+
+Esto puede deberse a que los dibujos pueden parecerse a otros numeros usados en el conjunto de train. Confundio un 7 por 2, un 9 por 4 y un 1 por 2. Esto puede ser porque los pinceles usados también al ser muy gruesos pueden confundir al algoritmo en la prediccion de las imagenes subidas por los integrantes. 
 
 
 
