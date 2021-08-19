@@ -1,6 +1,6 @@
 ---
 title: "LAB3"
-author: "Marisa Montoya, Majo Morales, Luis Garcia y Juanfer De Leon"
+author: "Marisa Montoya, Majo Morales, Luis Garcia"
 date: "8/16/2021"
 output: html_document
 ---
@@ -92,7 +92,7 @@ par(mfrow=c(1,1)) # set plot options back to default
     e. input_dropout_ratio lo que nos permite mejorar la generalizacion de la NN, 0.2 ya que es el sugerido por la documentacion
     f. hidden_dropout_ratio ya que especifica el radio de droput en las capas escondidad de la NN, aplicando el valor default de 0.5
     g. balance classes, se le da el valor de TRUE y se especifica cuantas capas escondidas se desea y de cuantos nodos seran.
-    h. momentum_stable se coloco el valor sugerido por la documentacion
+    h. momentum_stable se coloco el valor sugerido por la documentacion 0.99
     i. nesterov_accelerated_gradient para que la computadora cree el modelo de manera rapida.
     j. epochs, se coloco 1 ya que mide las veces que se entrena el modelo para obtener el mejor valor posible.
 ```{r echo=FALSE}
@@ -101,22 +101,22 @@ localH2O = h2o.init(max_mem_size = '6g', # use 6GB of RAM
 ```
 
 ```{r echo=FALSE}
-## MNIST data as H2O
+#data as H2O
 train[,1] = as.factor(train[,1]) # convert digit labels to factor for classification
-train_h2o = as.h2o(train)
+train2 = as.h2o(train)
 
 modelNN =
-  h2o.deeplearning(x = 2:785,  # column numbers for predictors
-                   y = 1,   # column number for label
-                   training_frame = train_h2o, # data in H2O format
-                   activation = "RectifierWithDropout", # algorithm
-                   input_dropout_ratio = 0.2, # % of inputs dropout
-                   hidden_dropout_ratios = c(0.5,0.5), # % for nodes dropout
+  h2o.deeplearning(x = 2:785,  
+                   y = 1,   
+                   training_frame = train2, 
+                   activation = "RectifierWithDropout",
+                   input_dropout_ratio = 0.2, 
+                   hidden_dropout_ratios = c(0.5,0.5), 
                    balance_classes = TRUE, 
-                   hidden = c(100,100), # two layers of 100 nodes
+                   hidden = c(100,100),  
                    momentum_stable = 0.99,
-                   nesterov_accelerated_gradient = T, # use it for speed
-                   epochs = 1) # no. of epochs
+                   nesterov_accelerated_gradient = T,
+                   epochs = 1)
 
 h2o.confusionMatrix(modelNN)
 
@@ -127,51 +127,51 @@ El modelo nos demuestra que luego de 1 epoch, el error es de 0.0888, lo cual se 
 
 ```{r echo=FALSE}
 modelNN =
-  h2o.deeplearning(x = 2:785,  # column numbers for predictors
-                   y = 1,   # column number for label
-                   training_frame = train_h2o, # data in H2O format
-                   activation = "RectifierWithDropout", # algorithm
-                   input_dropout_ratio = 0.2, # % of inputs dropout
-                   hidden_dropout_ratios = c(0.5,0.5), # % for nodes dropout
+  h2o.deeplearning(x = 2:785,  
+                   y = 1,   
+                   training_frame = train2, 
+                   activation = "RectifierWithDropout",
+                   input_dropout_ratio = 0.2, 
+                   hidden_dropout_ratios = c(0.5,0.5), 
                    balance_classes = TRUE, 
-                   hidden = c(100,100), # two layers of 100 nodes
+                   hidden = c(100,100),  
                    momentum_stable = 0.99,
-                   nesterov_accelerated_gradient = T, # use it for speed
-                   epochs = 5) # no. of epochs
+                   nesterov_accelerated_gradient = T,
+                   epochs = 5)
 
 h2o.confusionMatrix(modelNN)
 ```
 Con 5 epoch vemos que bajo el error a 0.0591, lo que significa que subio el accuracy a 94% de valores correctos. Veremos si subimos a 10 epochs tmabien sube el accuracy
 ```{r echo=FALSE}
 modelNN =
-  h2o.deeplearning(x = 2:785,  # column numbers for predictors
-                   y = 1,   # column number for label
-                   training_frame = train_h2o, # data in H2O format
-                   activation = "RectifierWithDropout", # algorithm
-                   input_dropout_ratio = 0.2, # % of inputs dropout
-                   hidden_dropout_ratios = c(0.5,0.5), # % for nodes dropout
+  h2o.deeplearning(x = 2:785,  
+                   y = 1,   
+                   training_frame = train2, 
+                   activation = "RectifierWithDropout",
+                   input_dropout_ratio = 0.2, 
+                   hidden_dropout_ratios = c(0.5,0.5), 
                    balance_classes = TRUE, 
-                   hidden = c(100,100), # two layers of 100 nodes
+                   hidden = c(100,100),  
                    momentum_stable = 0.99,
-                   nesterov_accelerated_gradient = T, # use it for speed
-                   epochs = 10) # no. of epochs
+                   nesterov_accelerated_gradient = T,
+                   epochs = 10)
 
 h2o.confusionMatrix(modelNN)
 ```
 El error bajo nuevamente y el accuracy subio a ser de 95%, probaremos con 15 epochs.
 ```{r}
 modelNN =
-  h2o.deeplearning(x = 2:785,  # column numbers for predictors
-                   y = 1,   # column number for label
-                   training_frame = train_h2o, # data in H2O format
-                   activation = "RectifierWithDropout", # algorithm
-                   input_dropout_ratio = 0.2, # % of inputs dropout
-                   hidden_dropout_ratios = c(0.5,0.5), # % for nodes dropout
+  h2o.deeplearning(x = 2:785,  
+                   y = 1,   
+                   training_frame = train2, 
+                   activation = "RectifierWithDropout",
+                   input_dropout_ratio = 0.2, 
+                   hidden_dropout_ratios = c(0.5,0.5), 
                    balance_classes = TRUE, 
-                   hidden = c(100,100), # two layers of 100 nodes
+                   hidden = c(100,100),  
                    momentum_stable = 0.99,
-                   nesterov_accelerated_gradient = T, # use it for speed
-                   epochs = 15) # no. of epochs
+                   nesterov_accelerated_gradient = T,
+                   epochs = 15)
 
 h2o.confusionMatrix(modelNN)
 ```
@@ -230,20 +230,24 @@ colnames(numbers)<-nums
 Se procede a activar el environment para h2o y a hacer la prediccion
 ```{r echo=FALSE}
  
-test_h2o = as.h2o(numbers)
+test = as.h2o(numbers)
 
-## classify test set
-h2o_y_test <- h2o.predict(modelNN, test_h2o)
+h2otest <- h2o.predict(modelNN, test)
 
-## convert H2O format into data frame and  save as csv
-df_y_test = as.data.frame(h2o_y_test)
-df_y_test = data.frame(ImageId = seq(1,length(df_y_test$predict)), Label = df_y_test$predict)
-df_y_test
+testt = as.data.frame(h2otest)
+testt = data.frame(ImageId = seq(1,length(testt$predict)), Label = testt$predict)
+testt
 ```
+
+Referencia de codigo realizar el modelo
+http://didericksen.github.io/deeplearning-r-h2o/
 ```{r shutdown java envvvv, echo=FALSE}
 h2o.shutdown(prompt = F)
 
 ```
+
+
+
 
 
 
