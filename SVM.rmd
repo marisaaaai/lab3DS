@@ -1,0 +1,119 @@
+---
+title: "SVM"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(kernlab)
+library(caret)
+library(caTools)
+library(gridExtra)
+```
+
+
+Se carga la data:
+```{r Data, echo = FALSE}
+setwd("C:/Users/Marisa Montoya}/lab3DS")
+datos <- read.csv("train.csv")
+
+View(datos) # Data has no column names
+
+names(datos)[1] <- "label"
+
+```
+
+Se limpian los datos para no tener datos innecesarios:
+```{r Clean data, echo = FALSE}
+# headers and footers
+
+head(datos, 1) # no unnecessary headers
+View(datos)
+
+tail(datos, 1) # no unnecessary footers
+
+# Duplicated rows
+
+sum(duplicated(datos)) # no duplicate rows
+
+# Checking for NAs
+sum(sapply(datos, function(x) sum(is.na(x)))) # There are no missing values
+
+```
+
+Al limpiar los datos se puede ver que no hay datos duplicados y tenemos titulos en ambos data sets. 
+```{r Entender data, echo = FALSE}
+str(datos) # all dependant variables integers, 10000 observations, 785 variables
+
+summary(datos[ , 2:100]) # but some only go up to ~100, data needs to be scaled
+
+```
+
+
+```{r Preparacion data, echo =FALSE}
+datos$label <- factor(datos$label)
+summary(datos$label)
+
+dim(datos) 
+set.seed(123)
+porcentaje<-0.11
+corte <- sample(nrow(datos),nrow(datos)*porcentaje)
+train <- datos[corte, ]
+
+max(train[ ,2:ncol(train)]) # max pixel value is 255, lets use this to scale data
+train[ , 2:ncol(train)] <- train[ , 2:ncol(train)]/255
+
+test<-datos[-corte,]
+test[ , 2:ncol(test)] <- test[ , 2:ncol(test)]/255
+
+```
+
+```{r Distribucion digitos, echo = FALSE}
+plot1 <- ggplot(datos, aes(x = label, y = (..count..)/sum(..count..))) + geom_bar() + theme_light() +
+                labs(y = "Relative frequency", title = "datos dataset") + 
+                scale_y_continuous(labels=scales::percent, limits = c(0 , 0.15)) +
+                geom_text(stat = "count", 
+                          aes(label = scales:: percent((..count..)/sum(..count..)), vjust = -1))
+
+plot2 <- ggplot(train, aes(x = label, y = (..count..)/sum(..count..))) + geom_bar() + theme_light() +
+                labs(y = "Relative frequency", title = "train dataset") + 
+                scale_y_continuous(labels=scales::percent, limits = c(0 , 0.15)) +
+                geom_text(stat = "count", 
+                          aes(label = scales:: percent((..count..)/sum(..count..)), vjust = -1))
+
+plot3 <- ggplot(test, aes(x = label, y = (..count..)/sum(..count..))) + geom_bar() + theme_light() +
+                labs(y = "Relative frequency", title = "test dataset") + 
+                scale_y_continuous(labels=scales::percent, limits = c(0 , 0.15)) +
+                geom_text(stat = "count", 
+                          aes(label = scales:: percent((..count..)/sum(..count..)), vjust = -1))
+
+grid.arrange(plot1, plot2, plot3, nrow = 3)
+```
+
+```{r Linear Kernel, echo = FALSE}
+model1_linear <- ksvm(label ~ ., data = train, scaled = FALSE, kernel = "vanilladot", C = 1)
+print(model1_linear) 
+
+eval1_linear <- predict(model1_linear, newdata = test, type = "response")
+confusionMatrix(eval1_linear, test$label)  
+
+
+model2_linear <- ksvm(label ~ ., data = train, scaled = FALSE, kernel = "vanilladot", C = 10)
+print(model2_linear) 
+
+eval2_linear <- predict(model2_linear, newdata = test, type = "response")
+confusionMatrix(eval2_linear, test$label) 
+
+
+grid_linear <- expand.grid(C= c(0.001, 0.1 ,1 ,10 ,100)) # defining range of C
+
+fit.linear <- train(label ~ ., data = train, metric = "Accuracy", method = "svmLinear",
+                    tuneGrid = grid_linear, preProcess = NULL,
+                    trControl = trainControl(method = "cv", number = 5))
+
+# printing results of 5 cross validation
+print(fit.linear) 
+plot(fit.linear)
+
+```
