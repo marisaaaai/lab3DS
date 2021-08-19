@@ -7,7 +7,8 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-setwd("C:/Users/Marisa Montoya}/lab3DS")
+#setwd("C:/Users/Marisa Montoya}/lab3DS")
+setwd("C:/Users/LUIS PEDRO/Desktop/CNNDATA")
 library(h2o)
 library(keras)
 library(tidyr)
@@ -243,4 +244,11 @@ df_y_test
 h2o.shutdown(prompt = F)
 
 ```
+
+
+
+
+
+
+
 
